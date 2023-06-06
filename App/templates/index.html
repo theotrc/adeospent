@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+    <form method="POST" action="/chart">
+        <label for="id-select">Choose an id:</label>
+
+        <select name="id" id="id-select">
+            <option value="">--Please choose an option--</option>
+            {% for i in ids %}
+            <option value="{{i}}">{{i}}</option>
+            {% endfor %}
+        </select>
+        <p> <input type = "submit" value="Valider"/> </p>
+    </form>
+    
+{% endblock content %}

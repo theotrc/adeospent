@@ -1,0 +1,4 @@
+.env
+/App/__pycache__
+/__pycache__
+test.ipynb
