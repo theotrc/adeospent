@@ -1,0 +1,38 @@
+<head>
+	<link rel="stylesheet" href="static/main.css">
+</head>
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<body>
+  
+    <div class= header-compte>
+
+        {%if current_user.is_admin%}
+            <div class="gestion">
+                <a href="{{url_for('admin.adminitems')}}">Gestion des articles</a>
+            </div>
+        {% endif %}
+        <div class="bonjour">
+            Bonjour {{current_user.firstname}}
+        </div>
+
+        <div class="informationspersos">
+            <a href="#">Informations Personnelles</a>
+        </div>
+
+        <div class="commandes">
+            <a href="#">Mes commandes</a>
+        </div>
+
+        <div class="deconnexion">
+            <a href="{{url_for('auth.logout')}}"><button>Se déconnecter</button></a>
+        </div>
+        
+    </div>
+
+</body>
+</html>
+{% endblock content%}

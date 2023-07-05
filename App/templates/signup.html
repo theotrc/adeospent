@@ -1,0 +1,72 @@
+<head>
+	<link rel="stylesheet" href="static/main.css">
+</head>
+
+
+{% extends "base.html" %}
+{% block content %}
+<div class="grille-signup">
+    <h3>Je crée mon compte</h3>
+
+    <form method="POST" action="/signup">
+
+        <p> <input  type="email" name="email" placeholder="Email" autofocus=""> </p>
+
+        <p> <input  type="password" name="password" placeholder="Mot de passe"> </p>
+        <div id="categories-container">
+            <label for="categorie1">Catégorie 1 :</label>
+            <select name="categorie1" id="categorie1">
+                <option value="">--Please choose an option--</option>
+                {% for i in ids %}
+                <option value="{{i}}">{{i}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="button" onclick="ajouterChampCategorie()">Ajouter une catégorie</button>
+        
+        <p> <button class="button is-block is-info is-large is-fullwidth">Valider</button> </p>
+
+    </form>
+
+    <script>
+        function ajouterChampCategorie() {
+          // Comptez le nombre de champs de sélection existants
+          const categoriesContainer = document.getElementById('categories-container');
+          const existingCategoryFields = categoriesContainer.getElementsByTagName('select').length;
+      
+          // Créez un nouvel élément de champ de sélection
+          const newCategoryField = document.createElement('div');
+          newCategoryField.innerHTML = `
+            <label for="categorie${existingCategoryFields}">Catégorie ${existingCategoryFields} :</label>
+            <select name="categorie1" id="categorie1" required>
+                <option value="">--Please choose an option--</option>
+                {% for i in ids %}
+                <option value="{{i}}">{{i}}</option>
+                {% endfor %}
+            </select>
+            <br>
+          `;
+      
+          // Ajoutez le nouveau champ de sélection au conteneur
+          categoriesContainer.appendChild(newCategoryField);
+        }
+      </script>
+
+    {% with messages = get_flashed_messages(with_categories=true,
+        category_filter=["error","info"]) %}
+
+       {%if messages %}
+           {% for category, message in messages %}
+               <p>{{message}}</p>
+               
+           {% endfor %}
+
+       {%endif %}
+
+   {% endwith %}
+</div>
+
+
+{% endblock %}
+

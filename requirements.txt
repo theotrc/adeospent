@@ -1,3 +1,11 @@
-flask==2.1.*
-pandas
-python-dotenv==0.20.*
+flask==2.2.2
+flask-sqlalchemy==3.0.2
+Flask-Login==0.6.2
+python-dotenv==0.21.0
+flask-wtf==1.1.1
+wtforms==3.0.1
+pg8000==1.29.*
+stripe==5.4.*
+pandas==1.4.*
+flask-migrate==4.0.*
+psycopg2-binary

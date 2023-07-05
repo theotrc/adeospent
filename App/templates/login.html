@@ -1,0 +1,43 @@
+<head>
+	<link rel="stylesheet" href="static/main.css">
+</head>
+{%extends "base.html" %}
+
+{% block content %}
+<div class="grille-auth">
+
+<h3 class="title">Connexion</h3>
+<form method="POST" action="/login">
+
+    <p> <input class="input is-large" type="email" name="email" placeholder="Adresse mail" autofocus=""> </p>
+
+
+    <p><input class="input is-large" type="password" name="password" placeholder="Mot de passe"> </p>
+
+    <p> <label >
+        <input type="checkbox" name="remember">
+        Se souvenir de moi
+    </label> </p>
+
+    <input type = "submit" value="Se connecter"/> 
+    
+</form>
+    <a href="{{url_for('auth.signup')}}"><button>Créer un compte</button></a>
+    <a href="{{url_for('auth.resetpwd')}}">Mot de passe oublié ?</a>
+
+    {% with messages = get_flashed_messages(with_categories=true,
+         category_filter=["error","info"]) %}
+
+        {%if messages %}
+            {% for category, message in messages %}
+                <p>{{message}}</p>
+                
+            {% endfor %}
+
+        {%endif %}
+
+    {% endwith %}
+</div>
+
+{%endblock content %}
+

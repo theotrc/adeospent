@@ -1,31 +1,45 @@
 
 {% extends "base.html" %}
 {% block content %}
-    <div class="grille">
-        <canvas class="item chart" id="myChart"></canvas>
-        <div class="item  selector">
-            <form method="POST" action="/chart_predictions">
-                <label for="id-select">Choose an id:</label>
-        
-                <select name="id" id="id-select">
-                    {% for i in ids %}
-                    <option value="{{i}}">{{i}}</option>
-                    {% endfor %}
-                </select>
-                <p> <input type = "submit" value="Valider"/> </p>
-            </form>
-        </div>
-    </div>
+    <form method="POST" action="/">
+        <label for="id-select">Choose an id:</label>
 
-    <a href="#" id="vote">data</a>
+        <select name="id" id="id-select">
+            {% for i in ids %}
+            <option value="{{i}}">{{i}}</option>
+            {% endfor %}
+        </select>
+        <p> <input type = "submit" value="Valider"/> </p>
+    </form>
+    <h3>{{id}}</h3>
+    <canvas class="item chart" id="myChart"></canvas>
+
+    <canvas class="item chart" id="lineChart"></canvas>
+    
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+
     var y = JSON.parse("{{ y }}");
-    var predictions = JSON.parse("{{ predictions }}")
     var x = {{ x | tojson | safe }};
+    var linex = {{ linex | tojson | safe}};
+    var liney = JSON.parse("{{ liney }}");
+    var plafond = JSON.parse("{{ plafond }}");
+
+    var y_pred = JSON.parse("{{ y_pred }}");
+    var x_pred = {{ x_pred | tojson | safe }};
+
+
+    
+    console.log(x_pred)
+    console.log(liney)
+    console.log(linex)
+
+
 
 
 </script>
 <script src="{{url_for('static', filename='chartbar.js')}}"></script>
+<script src="{{url_for('static', filename='linechart.js')}}"></script>
+
 {% endblock content %}

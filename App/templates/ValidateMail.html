@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="static/main.css">
+
+    <title>Validation mail</title>
+</head>
+<body>
+    <form method="POST" action="/mailvalidation/{{id}}/{{code}}">
+        <p><input class="input is-large" type="password" name="password" placeholder="Your Password"> </p>
+        <p><input class="input is-large" type="password" name="confirm_password" placeholder="Your Password"> </p>
+        <p> <input type = "submit" value="validate"/> </p>
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true,
+        category_filter=["error","info"]) %}
+
+       {%if messages %}
+           {% for category, message in messages %}
+               <p>{{message}}</p>
+               
+           {% endfor %}
+
+       {%endif %}
+
+   {% endwith %}
+</body>
+</html>
