@@ -5,6 +5,9 @@ from ..models import User, Product
 from ..models_predictions import Prediction, engine, product_spend
 from sqlalchemy.orm import Session
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from sqlalchemy import and_, func
+from ..utils import get_years, get_data
 
 
 home_blue = Blueprint("home", __name__, static_folder="../static", template_folder="../templates")
@@ -16,22 +19,29 @@ def home():
 
     user = User.query.filter_by(id=current_user.id).first()
     ids = [i.tangram_id for i in  user.product]
-    
     id = ids[0]
-    temp = df.loc[df.unique_id == str(id)].sort_values("ds")
-    x = temp["ds"].values.tolist()
-    y = temp["y"].fillna(0).values.tolist()
 
-    liney = []
+    temp = df.loc[df.unique_id == str(id)].sort_values("ds")
     linedata = temp.loc[temp.ds > "2022-12-01"][["y","ds","forecast_2023"]].dropna()
-    liney=linedata.y.cumsum().values.tolist()
-    linex=linedata.ds.values.tolist()
+    plafond= linedata.forecast_2023.values.tolist()
+    
+    years = get_years(Session(engine), str(id))
+
+
+    year = years[-1]
+    next_year = int(year) +1
+    date = f"{year}-01-01"
+    next_year = f"{next_year}-01-01"
+
+    temp = df.loc[df.unique_id == str(id)].sort_values("ds")
+    linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
     plafond= linedata.forecast_2023.values.tolist()
 
     with Session(engine) as session:
 
         data = {}
-        for spend in session.query(product_spend).filter_by(title=str(id)).all():
+        for spend in session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
+                                                                                  and_(func.date(product_spend.columns.period)<next_year)).all():
 
             temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
             str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
@@ -45,50 +55,40 @@ def home():
             str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             data_pred[str_date] = predict.Prediction
     
-    return render_template("chart.html", x = list(data.keys()), y=list(data.values()),ids=ids, liney=liney,linex=linex,plafond=plafond, id=id, x_pred=list(data_pred.keys()), y_pred = list(data_pred.values()))
+
+    budget_evolution = {}
+    for i in data.keys():
+        price_value = data[i]
+        try:
+            passed_date = datetime.strptime(i, "%Y-%m") - relativedelta(months=1)
+            passed_date = f"{passed_date.year}-{'{:02d}'.format(passed_date.month)}"
 
 
+            passed_price = data[passed_date]
+            budget_evolution[i] = float(price_value) + float(passed_price)
+            
+        except Exception as e:
+            budget_evolution[i] = float(price_value)
 
-
-
-
-@home_blue.route("/ap", methods=['POST'])
-def a_post():
-    id = request.form.get("id")
-    return str(id)
-
-
-# @home_blue.route("/", methods=["POST"])
-# @login_required
-# def graph_page():
-#     id = request.form.get("id")
     
-#     temp = df_predictions.loc[df_predictions.unique_id == str(id)].sort_values("ds")
-#     predictions = temp["prediction"].values.tolist()
 
-#     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
-#     x = temp["ds"].values.tolist()
-#     y = temp["y"].fillna(0).values.tolist()
     
-#     pred = [0 for i in range(len(y))]
-#     reverse_predictions = predictions[::-1]
-#     for i in range(len(predictions)):
-#         pred[i]= reverse_predictions[i]
-#     pred = pred[::-1]
-#     pred = temp["predictions"].values.tolist()
-    
-#     user = User.query.filter_by(id=current_user.id).first()
-#     ids = [i.tangram_id for i in  user.product]
+    return render_template("chart.html",
+                            x = list(data.keys()),
+                            y=list(data.values()),
+                            ids=ids,
+                            liney=list(budget_evolution.values()),
+                            linex=list(budget_evolution.keys()),
+                            plafond=plafond,
+                            id=id,
+                            x_pred=list(data_pred.keys()),
+                            y_pred = list(data_pred.values()),
+                            years = years,
+                            year=year)
 
-#     liney = []
-#     n = 0
-#     linedata = temp.loc[temp.ds > "2022-12-01"].dropna()
-#     liney=linedata.y.cumsum().values.tolist()
-#     linex=linedata.ds.values.tolist()
-#     plafond= linedata.forecast_2023.str.replace("$","").str.replace(",","").astype("float64").values.tolist()
-    
-    
-#     return render_template("chart.html", x = x, y=y,ids=ids, predictions=pred, liney=liney,linex=linex,plafond=plafond, id=id)
+
+
+
 
 
 @home_blue.route("/", methods=["POST"])
@@ -102,13 +102,24 @@ def graph_page():
 
     # get selected product id and loc it in df
     id = request.form.get("id")
+
+    years = get_years(Session(engine), str(id))
+
+    year = request.form.get("year")
+
+    next_year = int(year) +1
+    date = f"{year}-01-01"
+    next_year = f"{next_year}-01-01"
+    
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
-    # x (dates) and y (spent and predictions) to list
+    linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
+    plafond= linedata.forecast_2023.values.tolist()
 
     with Session(engine) as session:
 
         data = {}
-        for spend in session.query(product_spend).filter_by(title=str(id)).all():
+        for spend in session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
+                                                                                  and_(func.date(product_spend.columns.period)<next_year)).all():
 
             temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
             str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
@@ -122,27 +133,31 @@ def graph_page():
             str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             data_pred[str_date] = predict.Prediction
             
+    budget_evolution = {}
+    x = 0
+    for i in data.keys():
+        price_value = data[i]
+        try:
+            
+            x += price_value
+
+            budget_evolution[i] = x
+            
+            
+        except Exception as e:
+            budget_evolution[i] = float(price_value)
+    print(plafond)
 
 
-
-
-    
-    
-    # cunsum of spent in 2023 for linechart
-    liney = []
-    linedata = temp.loc[temp.ds > "2022-12-01"][["y","ds","forecast_2023"]].dropna()
-    liney=linedata.y.cumsum().values.tolist()
-    linex=linedata.ds.values.tolist()
-    plafond= linedata.forecast_2023.values.tolist()
-    
-    
-    return render_template("chart.html", x = list(data.keys()), y=list(data.values()),ids=ids, liney=liney,linex=linex,plafond=plafond, id=id, x_pred=list(data_pred.keys()), y_pred = list(data_pred.values()))
-
-
-@home_blue.route("/route")
-
-def testing():
-    with Session(engine) as session:
-        for predict in session.query(Prediction).distinct(Prediction.product).all():
-            print(predict.product)
-    return "ok"
+    return render_template("chart.html",
+                            x = list(data.keys()),
+                            y=list(data.values()),
+                            ids=ids,
+                            liney=list(budget_evolution.values()),
+                            linex=list(budget_evolution.keys()),
+                            plafond=plafond,
+                            id=id,
+                            x_pred=list(data_pred.keys()),
+                            y_pred = list(data_pred.values()),
+                            years = years,
+                            year=year)

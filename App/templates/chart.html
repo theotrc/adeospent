@@ -5,11 +5,23 @@
         <label for="id-select">Choose an id:</label>
 
         <select name="id" id="id-select">
+            <option value="{{id}}">{{id}}</option>
             {% for i in ids %}
             <option value="{{i}}">{{i}}</option>
             {% endfor %}
         </select>
         <p> <input type = "submit" value="Valider"/> </p>
+
+        <label for="id-select">Year:</label>
+
+        <select name="year" id="year-select">
+            <option value="{{year}}">{{year}}</option>
+            {% for i in years %}
+            <option value="{{i}}">{{i}}</option>
+            {% endfor %}
+        </select>
+        <p> <input type = "submit" value="Valider"/> </p>
+
     </form>
     <h3>{{id}}</h3>
     <canvas class="item chart" id="myChart"></canvas>
