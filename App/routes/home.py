@@ -27,7 +27,6 @@ def home():
     
     years = get_years(Session(engine), str(id))
 
-
     year = years[-1]
     next_year = int(year) +1
     date = f"{year}-01-01"
@@ -40,32 +39,39 @@ def home():
     with Session(engine) as session:
 
         data = {}
-        for spend in session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
-                                                                                  and_(func.date(product_spend.columns.period)<next_year)).all():
-
-            temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
-            str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+        for spend in session.query(product_spend).filter_by(title=str(id))\
+            .filter(and_(func.date(product_spend.columns.period)>=date),
+                        and_(func.date(product_spend.columns.period)<next_year)).all():
+            
+            try:
+                temp_date = spend.period
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            except:
+                temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             data[str_date] = spend.price
 
 
         data_pred = dict.fromkeys(data, 0)
         for predict in session.query(Prediction).filter_by(product=str(id)).all():
-
-            temp_date = datetime.strptime(str(predict.date), "%Y-%m-%d")
-            str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
-            data_pred[str_date] = predict.Prediction
+            try:
+                temp_date = datetime.strptime(str(predict.date), "%Y-%m-%d")
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            except:
+                temp_date =predict.date
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            
+            data_pred[str_date] = predict.prediction
     
 
     budget_evolution = {}
+    passed_price = 0
     for i in data.keys():
         price_value = data[i]
         try:
-            passed_date = datetime.strptime(i, "%Y-%m") - relativedelta(months=1)
-            passed_date = f"{passed_date.year}-{'{:02d}'.format(passed_date.month)}"
 
-
-            passed_price = data[passed_date]
             budget_evolution[i] = float(price_value) + float(passed_price)
+            passed_price = budget_evolution[i]
             
         except Exception as e:
             budget_evolution[i] = float(price_value)
@@ -114,39 +120,55 @@ def graph_page():
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
     linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
     plafond= linedata.forecast_2023.values.tolist()
+    temp = df.loc[df.unique_id == str(id)].sort_values("ds")
+    linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
+    plafond= linedata.forecast_2023.values.tolist()
+
+
+    
 
     with Session(engine) as session:
 
         data = {}
         for spend in session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
                                                                                   and_(func.date(product_spend.columns.period)<next_year)).all():
-
-            temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
-            str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            
+            try:
+                temp_date = spend.period
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            except:
+                temp_date = datetime.strptime(str(spend.period), "%Y-%m-%d")
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             data[str_date] = spend.price
 
 
         data_pred = dict.fromkeys(data, 0)
         for predict in session.query(Prediction).filter_by(product=str(id)).all():
-
-            temp_date = datetime.strptime(str(predict.date), "%Y-%m-%d")
-            str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
-            data_pred[str_date] = predict.Prediction
+            try:
+                temp_date = datetime.strptime(str(predict.date), "%Y-%m-%d")
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
+            except:
+                temp_date =predict.date
+                str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             
+            data_pred[str_date] = predict.prediction
+            print(data_pred)
+            print(predict,'\n\n\n\n\n')
+    
     budget_evolution = {}
-    x = 0
+    passed_price = 0
     for i in data.keys():
         price_value = data[i]
         try:
-            
-            x += price_value
+            passed_date = datetime.strptime(i, "%Y-%m") - relativedelta(months=1)
+            passed_date = f"{passed_date.year}-{'{:02d}'.format(passed_date.month)}"
 
-            budget_evolution[i] = x
-            
+
+            budget_evolution[i] = float(price_value) + float(passed_price)
+            passed_price = budget_evolution[i]
             
         except Exception as e:
             budget_evolution[i] = float(price_value)
-    print(plafond)
 
 
     return render_template("chart.html",

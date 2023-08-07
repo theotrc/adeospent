@@ -12,8 +12,12 @@ def get_years(session, product_title):
     with session as session:
         
         query = session.query(product_spend.columns.period).filter_by(title=str(product_title)).order_by(product_spend.columns.period).all()
-        min_year = datetime.strptime(query[0].period, "%Y-%m-%d").year
-        max_year = datetime.strptime(query[-1].period, "%Y-%m-%d").year
+        try:
+            min_year = query[0].period.year
+            max_year = query[-1].period.year
+        except:
+            min_year = datetime.strptime(query[0].period, "%Y-%m-%d").year
+            max_year = datetime.strptime(query[-1].period, "%Y-%m-%d").year
     years=[]
     for i in range(max_year - min_year+1):
         years.append(min_year + i)
@@ -26,8 +30,7 @@ def get_data(session, date, next_year):
     with session as session:
 
         data = {}
-        print( session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
-                                                                                    and_(func.date(product_spend.columns.period)<next_year)).all())
+
         for spend in session.query(product_spend).filter_by(title=str(id)).filter(and_(func.date(product_spend.columns.period)>=date),
                                                                                     and_(func.date(product_spend.columns.period)<next_year)).all():
 

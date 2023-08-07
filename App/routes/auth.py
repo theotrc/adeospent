@@ -4,7 +4,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from App import db
 from App.utils import generate_code
 from logging import FileHandler, WARNING
+
 from flask_login import login_user, login_required, current_user, logout_user
+
 from datetime import date, datetime, timedelta
 from hashlib import sha256
 from ..models import User, Product
@@ -13,7 +15,7 @@ import smtplib
 from email.message import EmailMessage
 import ssl
 import os
-from ..models_predictions import engine, Prediction
+from ..models_predictions import engine, Prediction,product_spend
 from sqlalchemy.orm import Session
 
 
@@ -29,22 +31,23 @@ auth_blue= Blueprint("auth", __name__, static_folder="../static", template_folde
 @auth_blue.route('/signup')
 def signup():
     with Session(engine) as session:
-        ids = [predict.product for predict in session.query(Prediction).distinct(Prediction.product).all()]
+        ids = [predict.product for predict in session.query(Prediction).distinct(Prediction.c.product).all()]
         
     return render_template('signup.html', ids=ids)
 
 
 @auth_blue.route('/signup', methods=['POST'])
 def signup_post():
-    # code to validate and add user to database goes here
+    
     email = request.form.get('email')
     password = request.form.get('password')
     ids = request.form.getlist('categorie1')
     
+    user = User.query.filter_by(email=email).first() 
+    # if this returns a user, then the email already exists in database
 
-    user = User.query.filter_by(email=email).first() # if this returns a user, then the email already exists in database
-
-    if user: # if a user is found, we want to redirect back to signup page so user can try again
+    if user: 
+    # if a user is found, we want to redirect back to signup page so user can try again
         return redirect(url_for('auth.signup'))
     if not password or len(password)<8:
         flash("le mot de passe doit faire 8 caractères minimum", "info")
@@ -56,8 +59,8 @@ def signup_post():
     # add the new user to the database
     db.session.add(new_user)
     db.session.commit()
-    print(ids)
     user_id = User.query.filter_by(email = email).first().id
+    print(ids)
     for id in ids:
         new_product = Product(user_id=user_id, tangram_id=id)
         db.session.add(new_product)
@@ -73,24 +76,24 @@ def login():
 
 @auth_blue.route('/login', methods=['POST'])
 def login_post():
-    # login code goes here
+
     email = request.form.get('email')
     password = request.form.get('password')
     
 
     remember = True if request.form.get('remember') else False
-
+    print('reeeeeeeeeeeeeemeeeeeeeeeeeeeeeeeeembeeeeeeeeeeeeeeer', remember)
     user = User.query.filter_by(email=email).first()
 
-    # check if the user actually exists
-    # take the user-supplied password, hash it, and compare it to the hashed password in the database
     if not user or not check_password_hash(user.password, password):
         message = f"Utilisateur ou mot de passe incorrect"
         flash(message, "info")
-        return redirect(url_for('auth.login')) # if the user doesn't exist or password is wrong, reload the page
+        return redirect(url_for('auth.login')) 
 
-    # if the above check passes, then we know the user has the right credentials
+   
     login_user(user, remember=remember)
+
+
     return redirect(url_for('home.home'))
 
 @auth_blue.route('/logout')
@@ -104,12 +107,13 @@ def logout():
 @auth_blue.route('/resetpwd')
 def resetpwd():
 
-
     return render_template('Password.html')
 
 @auth_blue.route("/resetpwd", methods=['POST'])
 def resetpwd_post():
 
+
+    url_app = os.environ.get('URLAPP')
     email_receiver = request.form.get('email')
 
     
@@ -126,9 +130,9 @@ def resetpwd_post():
         User.query.filter_by(id=id).update(values={"reset_token":code,"reset_token_expiry":expiry})
         db.session.commit()
 
-
+        
         subject = "réinitialisation de mot de passe"
-        body = f"lien de réinitialisation: localhost/mailvalidation/{id}/{code}"
+        body = f"lien de réinitialisation: {url_app}/mailvalidation/{id}/{code}"
 
         em = EmailMessage()
         em['From'] = email_sender
@@ -158,13 +162,15 @@ def resetpwd_post():
 def mailvalidation(id,code):
     
     user = User.query.filter_by(id=int(id)).filter_by(reset_token=code).first()
+
+
     if user:
         if user.reset_token_expiry > datetime.now():
             return render_template('ValidateMail.html', id=id,code=code)
         else:
-            return "False"
+            return redirect(url_for('/resetpwd'))
     else:
-        return "False"
+        return redirect(url_for('/resetpwd'))
 
 
 
@@ -182,6 +188,7 @@ def change_pwd(id, code):
                                                                                 "reset_token_expiry":None,
                                                                                 "password":generate_password_hash(password, method='sha256')})
             db.session.commit()
+            
         except Exception as e:
             return "error"
     else:
