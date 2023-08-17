@@ -38,7 +38,7 @@ class AuthTestCase(unittest.TestCase):
         
         self.email = 'test@test.com'
         self.pwd = 'password'
-        self.products = ['PYXIS','OMNISTORE']
+        self.products = ['OPUS','DAMEO']
 
 
 

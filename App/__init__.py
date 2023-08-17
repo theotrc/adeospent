@@ -3,6 +3,24 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 import pandas as pd
+import os
+
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY"),
+    integrations=[
+        FlaskIntegration(),
+    ],
+
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0
+)
+
+
 
 
 from .models_predictions import Base,engine
@@ -27,8 +45,9 @@ def create_app():
     from .routes.account import account_blue
     from .routes.home import home_blue
     from .routes.auth import auth_blue
+    from .routes.sentry_route import sentry_blue
 
-
+    app.register_blueprint(sentry_blue)
     app.register_blueprint(account_blue)
     app.register_blueprint(home_blue)
     app.register_blueprint(auth_blue)

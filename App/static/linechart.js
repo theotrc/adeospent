@@ -1,36 +1,33 @@
 const chartline = document.getElementById('lineChart');
 
 
+const depenses = {
+  labels: linex,
+  data: liney
+};
 
 
-function chartbar(axis,ordonne, plafond){
-  new Chart(chartline, {
+
+
+const chartline2 = new Chart(chartline, {
   type: 'line',
   data: {
-    labels: axis,
+    labels: depenses.labels,
     datasets: [
       {
-      label: 'depense du budget',
-      data: ordonne,
-      borderWidth: 1
-    },
-    {
-        label: "budget de l'annee",
-        data:plafond ,
-        borderWidth: 1
+        label: 'Dépenses passées',
+        data: depenses.data,
+        pointBackgroundColor:color_line
       },
-  ]
+      
+    ]
   },
   options: {
     scales: {
       y: {
-        beginAtZero: false
-      },
-      y1: {
-        beginAtZero: false
-      },
+        beginAtZero: true
+      }
     }
   }
-})};
+});
 
-chartbar(linex, liney, plafond)

@@ -9,3 +9,5 @@ stripe==5.4.*
 pandas==1.4.*
 flask-migrate==4.0.*
 psycopg2-binary
+pmdarima
+sentry-sdk[flask]==1.29.*

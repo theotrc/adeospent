@@ -1,0 +1,47 @@
+<head>
+	<link rel="stylesheet" href="static/main.css">
+</head>
+{%extends "base.html" %}
+
+{% block content %}
+<div class="grille-auth">
+
+<h3 class="title">Prédiction</h3>
+<form method="POST" action="/predictions">
+
+    
+    
+    <label for="categorie1">Produit:</label>
+    <select name="product" id="categorie1" required>
+        <option value="">--Please choose an option--</option>
+        {% for i in ids %}
+        <option value="{{i}}">{{i}}</option>
+        {% endfor %}
+    </select>
+
+
+    <p>Date de début: <input class="input is-large" type="month" min={{ min_date }} name="start_date" placeholder="Date de début ()" required> </p>
+    <p>Date de fin: <input class="input is-large" type="month" min={{ min_date }} name="end_date" placeholder="Date de fin" required> </p>
+
+
+
+    <input type = "submit" value="Prédire"/> 
+    
+</form>
+
+
+    {% with messages = get_flashed_messages(with_categories=true,
+         category_filter=["error","info"]) %}
+
+        {%if messages %}
+            {% for category, message in messages %}
+                <p>{{message}}</p>
+                
+            {% endfor %}
+
+        {%endif %}
+
+    {% endwith %}
+</div>
+
+{%endblock content %}

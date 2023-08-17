@@ -39,7 +39,7 @@
 
 
 const depensesPasses = {
-  labels: x,
+  labels: x_pred,
   data: y
 };
 

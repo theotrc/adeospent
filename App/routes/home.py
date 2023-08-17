@@ -1,26 +1,27 @@
+
+import pandas as pd
 from flask import render_template,Blueprint, request
 from App import df, df_predictions, db
 from flask_login import login_required,current_user
 from ..models import User, Product
 from ..models_predictions import Prediction, engine, product_spend
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, func
 from ..utils import get_years, get_data
-
+from pmdarima.arima import auto_arima
 
 home_blue = Blueprint("home", __name__, static_folder="../static", template_folder="../templates")
-
 
 @home_blue.route("/")
 @login_required
 def home():
-
     user = User.query.filter_by(id=current_user.id).first()
     ids = [i.tangram_id for i in  user.product]
+    print(user.product,"\n\n\n\n\n\n\n\n\n")
     id = ids[0]
-
+ 
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
     linedata = temp.loc[temp.ds > "2022-12-01"][["y","ds","forecast_2023"]].dropna()
     plafond= linedata.forecast_2023.values.tolist()
@@ -76,7 +77,7 @@ def home():
         except Exception as e:
             budget_evolution[i] = float(price_value)
 
-    
+    color_line = ["bleu" for i in range(len(budget_evolution))]
 
     
     return render_template("chart.html",
@@ -86,6 +87,7 @@ def home():
                             liney=list(budget_evolution.values()),
                             linex=list(budget_evolution.keys()),
                             plafond=plafond,
+                            color_line=color_line,
                             id=id,
                             x_pred=list(data_pred.keys()),
                             y_pred = list(data_pred.values()),
@@ -123,6 +125,7 @@ def graph_page():
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
     linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
     plafond= linedata.forecast_2023.values.tolist()
+    print("plafond",plafond)
 
 
     
@@ -152,8 +155,6 @@ def graph_page():
                 str_date = f"{temp_date.year}-{'{:02d}'.format(temp_date.month)}"
             
             data_pred[str_date] = predict.prediction
-            print(data_pred)
-            print(predict,'\n\n\n\n\n')
     
     budget_evolution = {}
     passed_price = 0
@@ -169,7 +170,8 @@ def graph_page():
             
         except Exception as e:
             budget_evolution[i] = float(price_value)
-
+    color_line = ["bleu" for i in range(len(budget_evolution))]
+    
 
     return render_template("chart.html",
                             x = list(data.keys()),
@@ -178,8 +180,98 @@ def graph_page():
                             liney=list(budget_evolution.values()),
                             linex=list(budget_evolution.keys()),
                             plafond=plafond,
+                            color_line=color_line,
                             id=id,
                             x_pred=list(data_pred.keys()),
                             y_pred = list(data_pred.values()),
                             years = years,
                             year=year)
+
+@home_blue.route("/predictions")
+@login_required
+def form_predictions():
+    user = User.query.filter_by(id=current_user.id).first()
+    ids = [i.tangram_id for i in  user.product]
+
+    min_date = datetime.now().strftime("%Y-%m")
+
+    return render_template("formpredictions.html", ids=ids, min_date=min_date)
+
+@home_blue.route("/predictions", methods=["POST"])
+@login_required
+def make_predictions():
+    id = request.form.get("product")
+    start_date= request.form.get("start_date")
+    end_date = request.form.get("end_date")
+
+
+    with Session(engine) as session:
+        r= session.query(product_spend.c.period, product_spend.c.price).filter_by(title=f"{id}").all()
+
+
+    df_prediction = pd.DataFrame.from_records(r)
+    df_prediction.columns = ["period","price"]
+
+    print("maaaaaaaaaaaaaax",df_prediction["period"].max())
+    diff = relativedelta( datetime.strptime(end_date, "%Y-%m"),df_prediction["period"].max())
+    n_months = diff.years * 12 + diff.months
+    
+    df_prediction["period"] = pd.to_datetime(df_prediction["period"])
+    df_prediction["price"] = df_prediction["price"].astype("float32")
+    df_prediction = df_prediction.sort_values("period").set_index("period")
+    model_temp = auto_arima(df_prediction[["price"]])
+    model_temp.fit_predict(df_prediction[["price"]], )
+    predictions_temp = model_temp.predict(start = df_prediction.shape[0] -19, n_periods=n_months)
+    print(predictions_temp)
+
+
+    y = df_prediction["price"].to_list()
+    x = [df_prediction.index.astype("object").values]
+
+
+    data={}
+    data_pred = {}
+    for i in df_prediction.index:
+        data[f"{i.year}-{i.month}-01"] = df_prediction.loc[i].values[0]
+        try:
+            data_pred[f"{i.year}-{i.month}-01"] = predictions_temp.loc[i].values[0]
+        except Exception:
+            data_pred[f"{i.year}-{i.month}-01"] = 0
+    for i in predictions_temp.index:
+        data_pred[f"{i.year}-{i.month}-01"] = predictions_temp.loc[i]
+    print(data_pred)
+
+
+    budget_evolution = {}
+    passed_price = 0
+    for i in data.keys():
+        price_value = data[i]
+        try:
+
+            budget_evolution[i] = float(price_value) + float(passed_price)
+            passed_price = budget_evolution[i]
+            
+        except Exception as e:
+            budget_evolution[i] = float(price_value)
+
+    budget_evolution_pred = budget_evolution.copy()
+    budget_evolution_pred["2023-07-01"] = 1500
+    color_line = ["bleu" for i in range(len(budget_evolution))]
+    
+    print(color_line)
+
+    # return "1"
+    
+    return render_template("chart.html",
+                                        x = list(data.keys()),
+                                        y=list(data.values()),
+                                        ids=None,
+                                        liney=list(budget_evolution.values()),
+                                        linex=list(budget_evolution.keys()),
+                                        color_line=color_line,
+                                        plafond=[1,1,1],
+                                        id=id,
+                                        x_pred=list(data_pred.keys()),
+                                        y_pred =list(data_pred.values()),
+                                        years = None,
+                                        year=None)
