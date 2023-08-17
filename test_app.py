@@ -62,6 +62,12 @@ class AuthTestCase(unittest.TestCase):
         self.assertTrue(user != None)
         self.assertListEqual(self.products, products)
 
+    def test_signup_error(self):
+        response = self.client.post('/signup', data={'email': self.email, 'password':self.pwd,'categorie1': self.products}, follow_redirects=True)
+        with self.app_context:
+            user = User.query.filter_by(email="notanemail").all()
+        self.assertTrue(len(user) < 2)
+        
     def test_login_successful(self):
         form_data = {
             'email': 'test@example.com',
@@ -71,7 +77,7 @@ class AuthTestCase(unittest.TestCase):
 
         with current_app.test_request_context():
             # Effectuez une requête POST vers la route de connexion.
-            response = self.client.post(url_for('auth.login_post'), data=form_data, follow_redirects=True)
+            response = self.client.post(url_for('auth.login_post'), data=form_data, follow_redirects=False)
 
             # Vérifiez que la redirection a eu lieu en vérifiant le code de statut HTTP.
             self.assertEqual(response.status_code, 302)
@@ -81,16 +87,18 @@ class AuthTestCase(unittest.TestCase):
             # Vérifiez que l'utilisateur est maintenant connecté.
             self.assertTrue(current_user.is_authenticated)
 
+
     def test_delete_user(self):
         with self.app_context:
             user = User.query.filter_by(email=self.email).first() 
-            print(user)
+
             db.session.delete(user)
             db.session.commit()
 
             user = User.query.filter_by(email=self.email).first() 
-            print(user)
+
         self.assertTrue(user == None)
+    
         
     
     # def test_signup(self):

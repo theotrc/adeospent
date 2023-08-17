@@ -7,3 +7,4 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
 SECRET_KEY = os.environ.get('SECRET')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 UPLOAD_FOLDER = os.environ.get('FOLDER_PATH')
+SENTRY_KEY = os.environ.get("SENTRY")

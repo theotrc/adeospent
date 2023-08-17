@@ -3,27 +3,24 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 import pandas as pd
-import os
-
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+from config import SENTRY_KEY
+
 
 sentry_sdk.init(
-    dsn=os.environ.get("SENTRY"),
+    dsn=SENTRY_KEY,
     integrations=[
         FlaskIntegration(),
     ],
 
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
     traces_sample_rate=1.0
 )
 
 
 
 
-from .models_predictions import Base,engine
+from .models_predictions import Base,engine 
 Base.metadata.create_all(bind=engine)
 
 df = pd.read_csv("App/static/data/prdictions_0_ccdp.csv")

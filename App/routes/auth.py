@@ -60,7 +60,7 @@ def signup_post():
     db.session.add(new_user)
     db.session.commit()
     user_id = User.query.filter_by(email = email).first().id
-    print(ids)
+
     for id in ids:
         new_product = Product(user_id=user_id, tangram_id=id)
         db.session.add(new_product)

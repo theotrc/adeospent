@@ -19,7 +19,6 @@ home_blue = Blueprint("home", __name__, static_folder="../static", template_fold
 def home():
     user = User.query.filter_by(id=current_user.id).first()
     ids = [i.tangram_id for i in  user.product]
-    print(user.product,"\n\n\n\n\n\n\n\n\n")
     id = ids[0]
  
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
@@ -125,7 +124,6 @@ def graph_page():
     temp = df.loc[df.unique_id == str(id)].sort_values("ds")
     linedata = temp.loc[(temp.ds >= date) & (temp.ds < next_year)][["y","ds","forecast_2023"]].dropna()
     plafond= linedata.forecast_2023.values.tolist()
-    print("plafond",plafond)
 
 
     
@@ -212,7 +210,6 @@ def make_predictions():
     df_prediction = pd.DataFrame.from_records(r)
     df_prediction.columns = ["period","price"]
 
-    print("maaaaaaaaaaaaaax",df_prediction["period"].max())
     diff = relativedelta( datetime.strptime(end_date, "%Y-%m"),df_prediction["period"].max())
     n_months = diff.years * 12 + diff.months
     
@@ -222,7 +219,6 @@ def make_predictions():
     model_temp = auto_arima(df_prediction[["price"]])
     model_temp.fit_predict(df_prediction[["price"]], )
     predictions_temp = model_temp.predict(start = df_prediction.shape[0] -19, n_periods=n_months)
-    print(predictions_temp)
 
 
     y = df_prediction["price"].to_list()
@@ -239,7 +235,6 @@ def make_predictions():
             data_pred[f"{i.year}-{i.month}-01"] = 0
     for i in predictions_temp.index:
         data_pred[f"{i.year}-{i.month}-01"] = predictions_temp.loc[i]
-    print(data_pred)
 
 
     budget_evolution = {}
@@ -258,7 +253,6 @@ def make_predictions():
     budget_evolution_pred["2023-07-01"] = 1500
     color_line = ["bleu" for i in range(len(budget_evolution))]
     
-    print(color_line)
 
     # return "1"
     
